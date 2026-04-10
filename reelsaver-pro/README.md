@@ -1,4 +1,4 @@
-# ReelSaver Pro by ig/Clickors
+# ReelSaver Pro - By Clickors
 
 Chrome Extension (Manifest V3) + Node.js backend to download Instagram Reels using:
 
@@ -13,7 +13,7 @@ npm install
 npm run start
 ```
 
-Requires `yt-dlp` installed and available in PATH.
+Backend requires `yt-dlp` available via system PATH or Python module fallback.
 
 Fallback supported by backend:
 - `yt-dlp`
@@ -34,4 +34,4 @@ For local development backend URL is `http://localhost:4000`.
 
 ## 3) Render deployment note
 
-If you see `Unable to execute yt-dlp ... ENOENT` on Render, install `yt-dlp` in your Render service image/environment or provide Python with `yt_dlp` package.
+If you see `Unable to execute yt-dlp ... ENOENT` on Render, install yt-dlp during Render build/start (or install Python package `yt-dlp`).
