@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "ReelSaver Pro",
   "description": "Download Instagram Reels as video or audio with URL and auto-detect modes.",
-  "version": "1.8",
+  "version": "1.0.1",
   "icons": {
     "16": "icons/icon16.png",
     "48": "icons/icon48.png",
