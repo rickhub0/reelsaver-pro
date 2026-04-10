@@ -1,4 +1,4 @@
-# ReelSaver Pro
+# ReelSaver Pro by ig/Clickors
 
 Chrome Extension (Manifest V3) + Node.js backend to download Instagram Reels using:
 
