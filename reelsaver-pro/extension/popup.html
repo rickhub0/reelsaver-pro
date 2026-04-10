@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>ReelSaver Pro</title>
+    <link rel="stylesheet" href="popup.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <header class="topbar">
+        <h1>ReelSaver Pro</h1>
+        <span id="statusBadge" class="badge idle">Idle</span>
+      </header>
+
+      <section class="card">
+        <h2>Paste Reel URL</h2>
+        <div class="input-row">
+          <input
+            id="reelUrl"
+            type="url"
+            placeholder="https://www.instagram.com/reel/..."
+            autocomplete="off"
+          />
+          <button id="fetchBtn" class="btn primary">Fetch</button>
+        </div>
+        <p class="hint">Backend API: <span id="apiHostLabel">http://localhost:4000</span></p>
+      </section>
+
+      <section class="card">
+        <div class="row-between">
+          <h2>Auto Detect</h2>
+          <label class="switch">
+            <input id="autoDetectToggle" type="checkbox" checked />
+            <span class="slider"></span>
+          </label>
+        </div>
+        <p id="tabHint" class="hint">Checking active tab...</p>
+        <button id="detectBtn" class="btn" disabled>Download Current Reel</button>
+      </section>
+
+      <section id="previewCard" class="card hidden">
+        <h2>Preview</h2>
+        <img id="thumb" alt="Reel thumbnail" class="thumb" />
+        <div class="meta">
+          <p id="title" class="title"></p>
+          <p id="duration" class="hint"></p>
+        </div>
+        <video id="videoPreview" controls preload="metadata"></video>
+      </section>
+
+      <section class="card">
+        <h2>Download Options</h2>
+        <div class="toggles">
+          <label><input id="videoToggle" type="checkbox" checked /> Video (MP4)</label>
+          <label><input id="audioToggle" type="checkbox" /> Audio (MP3)</label>
+        </div>
+
+        <label for="qualitySelect" class="label">Quality</label>
+        <select id="qualitySelect">
+          <option value="best">Best</option>
+          <option value="720p">720p</option>
+          <option value="480p">480p</option>
+        </select>
+
+        <button id="downloadBtn" class="btn success" disabled>Start Download</button>
+      </section>
+
+      <section class="card">
+        <h2>Recent Downloads</h2>
+        <ul id="historyList" class="history"></ul>
+      </section>
+
+      <div id="loader" class="loader hidden" aria-hidden="true"></div>
+      <p id="errorMsg" class="error hidden"></p>
+    </main>
+
+    <script src="popup.js" type="module"></script>
+  </body>
+</html>
