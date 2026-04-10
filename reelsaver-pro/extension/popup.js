@@ -1,6 +1,6 @@
 const HISTORY_KEY = 'reelsaver_history';
 const SETTINGS_KEY = 'reelsaver_settings';
-const DEFAULT_API_BASE = 'http://localhost:4000';
+const DEFAULT_API_BASE = 'https://reelsaver-pro-api.onrender.com';
 
 const state = {
   currentUrl: '',
