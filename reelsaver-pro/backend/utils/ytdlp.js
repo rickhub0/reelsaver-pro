@@ -1,13 +1,24 @@
 const { spawn } = require('node:child_process');
 
+const YT_DLP_COMMAND_CANDIDATES = [
+  { command: 'yt-dlp', args: [] },
+  { command: 'python3', args: ['-m', 'yt_dlp'] },
+  { command: 'python', args: ['-m', 'yt_dlp'] },
+  { command: 'py', args: ['-m', 'yt_dlp'] }
+];
+
 /**
- * Runs yt-dlp with provided arguments and parses JSON output safely.
+ * Runs yt-dlp with a specific command invocation and parses JSON output safely.
  */
-function runYtDlpJson(args) {
+function runYtDlpWithCandidate(candidate, args) {
   return new Promise((resolve, reject) => {
-    const process = spawn('yt-dlp', [...args, '--dump-single-json', '--no-warnings'], {
-      stdio: ['ignore', 'pipe', 'pipe']
-    });
+    const process = spawn(
+      candidate.command,
+      [...candidate.args, ...args, '--dump-single-json', '--no-warnings'],
+      {
+        stdio: ['ignore', 'pipe', 'pipe']
+      }
+    );
 
     let stdout = '';
     let stderr = '';
@@ -22,7 +33,7 @@ function runYtDlpJson(args) {
 
     process.on('close', (code) => {
       if (code !== 0) {
-        reject(new Error(stderr.trim() || 'yt-dlp process failed'));
+        reject(new Error(stderr.trim() || `${candidate.command} process failed`));
         return;
       }
 
@@ -34,9 +45,36 @@ function runYtDlpJson(args) {
     });
 
     process.on('error', (error) => {
-      reject(new Error(`Unable to execute yt-dlp: ${error.message}`));
+      reject(error);
     });
   });
+}
+
+/**
+ * Runs yt-dlp by trying several command candidates (binary and Python module fallback).
+ */
+async function runYtDlpJson(args) {
+  let lastError;
+
+  for (const candidate of YT_DLP_COMMAND_CANDIDATES) {
+    try {
+      return await runYtDlpWithCandidate(candidate, args);
+    } catch (error) {
+      lastError = error;
+
+      // For missing command, continue trying fallbacks.
+      if (error.code === 'ENOENT' || /not found|ENOENT/i.test(error.message)) {
+        continue;
+      }
+
+      // Command exists but yt-dlp itself failed (private reel/geo/etc) -> stop here.
+      throw new Error(error.message);
+    }
+  }
+
+  throw new Error(
+    `Unable to execute yt-dlp. Install it using one of: 'yt-dlp', 'python -m pip install yt-dlp', or ensure it is in PATH. Last error: ${lastError?.message || 'unknown error'}`
+  );
 }
 
 /**
