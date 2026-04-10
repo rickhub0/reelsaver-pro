@@ -1,6 +1,8 @@
 const { spawn } = require('node:child_process');
+const ytdlpPath = require('yt-dlp-exec').path;
 
 const YT_DLP_COMMAND_CANDIDATES = [
+  { command: ytdlpPath, args: [] },
   { command: 'yt-dlp', args: [] },
   { command: 'python3', args: ['-m', 'yt_dlp'] },
   { command: 'python', args: ['-m', 'yt_dlp'] },
@@ -51,7 +53,7 @@ function runYtDlpWithCandidate(candidate, args) {
 }
 
 /**
- * Runs yt-dlp by trying several command candidates (binary and Python module fallback).
+ * Runs yt-dlp by trying several command candidates (bundled binary, system binary, Python fallback).
  */
 async function runYtDlpJson(args) {
   let lastError;
@@ -62,8 +64,11 @@ async function runYtDlpJson(args) {
     } catch (error) {
       lastError = error;
 
-      // For missing command, continue trying fallbacks.
-      if (error.code === 'ENOENT' || /not found|ENOENT/i.test(error.message)) {
+      // For missing command/module, continue trying fallbacks.
+      if (
+        error.code === 'ENOENT' ||
+        /not found|ENOENT|No module named yt_dlp/i.test(error.message)
+      ) {
         continue;
       }
 
@@ -73,111 +78,6 @@ async function runYtDlpJson(args) {
   }
 
   throw new Error(
-    `Unable to execute yt-dlp. Install it using one of: 'yt-dlp', 'python -m pip install yt-dlp', or ensure it is in PATH. Last error: ${lastError?.message || 'unknown error'}`
+    `Unable to execute yt-dlp. Install or bundle it (yt-dlp executable / python module). Last error: ${lastError?.message || 'unknown error'}`
   );
 }
-
-/**
- * Selects best-matching video format based on requested quality.
- */
-function pickVideoFormat(formats, quality) {
-  const videoOnly = formats.filter(
-    (item) => item.vcodec !== 'none' && item.protocol !== 'm3u8_native' && item.url
-  );
-
-  if (!videoOnly.length) return null;
-
-  const normalized = quality === 'best' ? Infinity : Number.parseInt(quality, 10);
-
-  if (!Number.isFinite(normalized)) {
-    return videoOnly.sort((a, b) => (b.height || 0) - (a.height || 0))[0];
-  }
-
-  const eligible = videoOnly
-    .filter((item) => (item.height || 0) <= normalized)
-    .sort((a, b) => (b.height || 0) - (a.height || 0));
-
-  return eligible[0] || videoOnly.sort((a, b) => (b.height || 0) - (a.height || 0))[0];
-}
-
-/**
- * Selects best audio format URL.
- */
-function pickAudioFormat(formats) {
-  const audioOnly = formats
-    .filter((item) => item.acodec !== 'none' && item.vcodec === 'none' && item.url)
-    .sort((a, b) => (b.abr || 0) - (a.abr || 0));
-
-  return audioOnly[0] || null;
-}
-
-/**
- * Analyzes an Instagram reel URL and returns normalized metadata.
- */
-async function analyzeReel(url) {
-  const data = await runYtDlpJson([url]);
-  const formats = data.formats || [];
-
-  const bestVideo = pickVideoFormat(formats, 'best');
-  const bestAudio = pickAudioFormat(formats);
-
-  return {
-    title: data.title || 'Instagram Reel',
-    duration: data.duration || null,
-    thumbnail: data.thumbnail || null,
-    formats: [
-      ...(bestVideo
-        ? [
-            {
-              type: 'video',
-              quality: bestVideo.height ? `${bestVideo.height}p` : 'best',
-              ext: bestVideo.ext || 'mp4',
-              url: bestVideo.url
-            }
-          ]
-        : []),
-      ...(bestAudio
-        ? [
-            {
-              type: 'audio',
-              quality: 'mp3',
-              ext: 'mp3',
-              url: bestAudio.url
-            }
-          ]
-        : [])
-    ]
-  };
-}
-
-/**
- * Resolves download URL and extension by download type and requested quality.
- */
-async function resolveDownload(url, type, quality) {
-  const data = await runYtDlpJson([url]);
-  const formats = data.formats || [];
-
-  if (type === 'audio') {
-    const audio = pickAudioFormat(formats);
-    if (!audio) throw new Error('No audio stream found for this reel.');
-    return {
-      downloadUrl: audio.url,
-      ext: 'mp3'
-    };
-  }
-
-  const selectedVideo = pickVideoFormat(formats, quality);
-  if (!selectedVideo) {
-    throw new Error('No video stream found for this reel.');
-  }
-
-  return {
-    downloadUrl: selectedVideo.url,
-    ext: selectedVideo.ext || 'mp4'
-  };
-}
-
-module.exports = {
-  analyzeReel,
-  resolveDownload
-};
